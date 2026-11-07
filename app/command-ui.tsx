@@ -1,0 +1,45 @@
+"use client";
+import {useState} from 'react';
+import {ChevronUp,Users,X,Check,Lock,Shield,Coins,ShoppingBag,Plus,Minus} from 'lucide-react';
+import {Progress} from '@/components/ui/progress';
+import {Select,SelectTrigger,SelectValue,SelectContent,SelectItem} from '@/components/ui/select';
+import {PRIORITIES,priorityLabel} from '@/lib/facility/priorities.mjs';
+import {Slider} from '@/components/ui/slider';
+import {Tabs,TabsList,TabsTrigger} from '@/components/ui/tabs';
+import {RadioGroup,RadioGroupItem} from '@/components/ui/radio-group';
+// @ts-ignore
+import {RANKS} from '@/lib/facility/ranks.mjs';
+// @ts-ignore
+import {COMMANDS,RADIUS} from '@/lib/facility/commands.mjs';
+// @ts-ignore
+import {FLOOR_INFO} from '@/lib/facility/map.mjs';
+const number=(n:number)=>Math.ceil(n).toLocaleString('fr-FR');
+export function CommandPanel({s,game,onPromotions,onShop}:any){
+ return <div className="command-panel">
+  <button className="wallet-button" onClick={onShop} aria-label="Ouvrir les boutiques"><span><Coins size={16}/><b>{number(s.credits||0)} CR</b></span><span>BOUTIQUES <ShoppingBag size={14}/></span></button><div className="xp-heading"><span>{number(s.xp||0)} XP</span><button onClick={onPromotions}><ChevronUp size={14}/> Arbre de promotion</button></div>
+  <Progress value={s.xpProgress||0} className="xp-bar" aria-label="Progression vers la prochaine promotion"/>
+  <p className="promotion-next">{s.rankNumber<30?<>Prochaine promotion dans <b>{number(s.nextXP||0)} XP</b>.</>:'Grade maximal atteint.'}</p>
+  <div className="command-target"><Users size={13}/><span>{s.selected?.length?`${s.selected.length} sélectionné(s) · ${s.commandCount} commandable(s)`:`Cercle · ${s.commandCount||0} subordonné(s)`}</span>{s.selected?.length>0&&<button aria-label="Effacer la sélection" onClick={()=>game.sim.selectedIDs.clear()}><X size={14}/></button>}</div>
+  <div className="command-radius"><label id="radius-label">Rayon {Math.round((s.commandRadius||250)/32)} m</label><Slider aria-labelledby="radius-label" value={[s.commandRadius||250]} min={RADIUS.min} max={RADIUS.max} step={RADIUS.step} onValueChange={([v])=>game.sim.setCommandRadius(v)}/></div>
+  <div className="command-priority" aria-label="Priorité des prochains ordres"><button aria-label="Réduire la priorité" disabled={s.commandPriority<=1} onClick={()=>game.setCommandPriority(s.commandPriority-1)}><Minus size={14}/></button><Select value={String(s.commandPriority||6)} onValueChange={v=>game.setCommandPriority(Number(v))} onOpenChange={open=>{game.priorityMenuOpen=open;game.clearInput();}}><SelectTrigger aria-label="Priorité de l’ordre"><SelectValue/></SelectTrigger><SelectContent className="priority-options" position="popper">{PRIORITIES.map((p:any)=><SelectItem key={p.value} value={String(p.value)}>{p.code} · {p.name}</SelectItem>)}</SelectContent></Select><button aria-label="Augmenter la priorité" disabled={s.commandPriority>=15} onClick={()=>game.setCommandPriority(s.commandPriority+1)}><Plus size={14}/></button></div><div className="priority-hint">Prochain ordre · Maj + Page ↑ / ↓</div>
+  <div className="command-keys">{COMMANDS.map((c:any)=><button key={c.key} disabled={s.health<=0} onClick={()=>game.command(c.type)} title={c.label+' — '+c.key}><kbd>{c.key}</kbd><span>{c.label}</span></button>)}</div>
+  <div className="command-note">{game.renderer.isFPS?"Ctrl+clic sur un allié visé pour le sélectionner":"Clic pour sélectionner · Ctrl+clic pour ajouter"} · Alt+molette pour régler le rayon</div>
+  {!!s.selected?.length&&<details className="selected-units" open><summary>Soldats sélectionnés</summary><div>{s.selected.map((u:any)=><article key={u.id}><div><strong>{u.name}</strong><button aria-label={'Retirer '+u.name} onClick={()=>game.sim.selectedIDs.delete(u.id)}><X size={12}/></button></div><p>{u.rank} ({u.number}) · {u.health}/{u.maxHealth} PV</p><p>{u.role} · niv. {FLOOR_INFO[u.floor+2].short} · {u.commandable?'sous votre autorité':u.blockedReason||'Ordre protégé'}</p><small>{u.priority?priorityLabel(u.priority)+' · ':''}{COMMANDS.find((c:any)=>c.type===u.order)?.label||u.order} · {u.state}{u.commander?' · '+u.commander:''}</small></article>)}</div></details>}
+ </div>;
+}
+export function PromotionTree({s}:any){
+ return <><p className="promotion-explainer">30 paliers fondés sur la hiérarchie de l’armée de terre. Les échelons I et II sont propres au jeu ; le numéro fixe votre autorité hiérarchique. +4 PV et +0,5 % de vitesse de base par palier. Inventaire : 3 cases au départ, puis +1 tous les deux paliers.</p><div className="promotion-timeline" role="list" aria-label="30 grades de progression">{RANKS.map((r:any,i:number)=>{
+  const current=s.rankNumber===r.number,unlocked=s.rankNumber>=r.number,next=RANKS[i+1],progress=current?s.xpProgress:unlocked?100:0;
+  return <article key={r.index} className={'promotion-tier '+(current?'current':unlocked?'unlocked':'locked')} role="listitem" aria-current={current?'step':undefined}><span className="tier-number">{unlocked?<Check size={14}/>:<Lock size={13}/>} {r.number}</span><div><div className="tier-title"><strong>{r.name} ({r.number})</strong><span>{current?'ACTUEL':unlocked?'DÉBLOQUÉ':'VERROUILLÉ'}</span></div><p>{number(r.xp)} XP au total · {r.cost?number(r.cost)+' XP depuis le précédent':'Grade de départ'}</p><Progress value={progress} aria-label={'Progression du grade '+r.number}/><small>{3+Math.floor(i/2)} cases d’inventaire · {r.maxHealth} PV · vitesse +{(i*.5).toLocaleString('fr-FR')} %{current&&next?' · reste '+number(next.xp-s.xp)+' XP':''}</small></div></article>;
+ })}</div><p className="dialog-note">Élimination : XP selon le rôle, le grade et le statut d’élite. À la mort : perte de deux paliers et des XP correspondants. Une nouvelle partie commence à 0 XP.</p></>;
+}
+export function RoomPicker({game,s,onDone}:any){
+ const [floor,setFloor]=useState(s.floor),[room,setRoom]=useState<number|null>(null);
+ const rooms=game?.sim.floor(floor).rooms||[];
+ return <><Tabs value={String(floor)} onValueChange={v=>{setFloor(Number(v));setRoom(null);}}><TabsList className="compact-floors">{FLOOR_INFO.map((f:any)=><TabsTrigger key={f.id} value={String(f.id)}>{f.short}</TabsTrigger>)}</TabsList></Tabs><p className="picker-floor">{FLOOR_INFO[floor+2].name} · {priorityLabel(s.commandPriority)} · {s.commandCount} subordonné(s) disponible(s)</p><RadioGroup className="room-grid" value={room===null?'':String(room)} onValueChange={v=>setRoom(Number(v))} aria-label="Salle à défendre">{rooms.map((r:any)=><label key={r.index} className={room===r.index?'chosen':''}><RadioGroupItem value={String(r.index)} aria-label={r.name+' secteur '+(r.index+1)}/><span><strong>{r.name}</strong><small>Secteur {String(r.index+1).padStart(2,'0')} · {r.owner==='enemy'?'À REPRENDRE':'ALLIÉ'}{r.contested?' · CONTESTÉ':''}</small></span></label>)}</RadioGroup><button className="deploy-button small" disabled={room===null||s.commandCount===0||s.health<=0} onClick={()=>{const result=game.command('DEFEND_ZONE',{floor,index:room});if(result?.count)onDone();}}>DÉFENDRE CETTE SALLE <Shield size={17}/></button><p className="dialog-note">Les soldats rejoignent la salle par les escaliers ou les ascenseurs et y restent jusqu’à un nouvel ordre. La bataille continue.</p></>;
+}
+export function RespawnPicker({s,onDeploy}:any){
+ const [floor,setFloor]=useState(0),[supply,setSupply]=useState('');
+ const stations=(s.supplies||[]).filter((p:any)=>p.floor===floor);
+ return <><div className="death-penalty"><span>GRADE ACTUEL</span><strong>{s.rank?.name} ({s.rankNumber})</strong><p>−{number(s.deathPenalty?.amount||0)} XP · {s.maxHealth} PV au redéploiement</p></div><Tabs value={String(floor)} onValueChange={v=>{setFloor(Number(v));setSupply('');}}><TabsList className="compact-floors">{FLOOR_INFO.map((f:any)=><TabsTrigger key={f.id} value={String(f.id)} disabled={!s.supplies?.some((p:any)=>p.floor===f.id)} title={!s.supplies?.some((p:any)=>p.floor===f.id)?'Aucun ravitaillement':f.name}>{f.short}</TabsTrigger>)}</TabsList></Tabs><p className="picker-floor">{FLOOR_INFO[floor+2].name} · choisissez votre ravitaillement</p><RadioGroup value={supply} onValueChange={setSupply} aria-label="Ravitaillement de réapparition" className="supply-list">{stations.map((p:any)=><label key={p.id}><RadioGroupItem value={p.id} disabled={!p.available} aria-label={p.name}/><span><strong>{p.name}</strong><small>{!p.available?p.reason:p.danger?p.danger+' hostile(s) proches · salle libre':'Salle sécurisée'}</small></span></label>)}</RadioGroup><button className="deploy-button small" disabled={!stations.some((p:any)=>p.id===supply&&p.available)||s.respawn>0} onClick={()=>onDeploy(supply)}>{s.respawn>0?'REDÉPLOIEMENT DANS '+s.respawn+' S':'RÉAPPARAÎTRE ICI'}</button><p className="dialog-note">Les salles ennemies ou contenant un hostile sont interdites au redéploiement. Une salle à égalité reste au dernier camp qui la contrôlait. Votre matériel reste dans un sac à l’endroit de votre mort, indiqué sur la carte. Le toit ne possède pas de ravitaillement. La bataille continue pendant votre choix. Protection de 5 secondes après réapparition.</p></>;
+}
