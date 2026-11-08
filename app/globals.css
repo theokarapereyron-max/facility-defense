@@ -201,3 +201,19 @@ body{background:#0c1721}.facility-app{background:#0c1721}.battlefield{cursor:cro
  .fps-view .field-station{position:absolute;left:32px;top:30px;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
  .fps-view .field-station .location-panel,.fps-view .field-station .field-controls,.fps-view .field-station .officer-order{position:static;margin:0}
 }
+.account-entry { position:fixed; right:1rem; top:5.5rem; z-index:20; padding:.7rem 1rem; border:1px solid #4d91a5; background:#102c3b; color:#d5f6ff; cursor:pointer; }
+.account-panel { display:grid; gap:1rem; max-height:65vh; overflow:auto; color:#d5ecf3; }
+.account-panel form, .account-panel label { display:grid; gap:.45rem; }
+.account-panel form { gap:.8rem; }
+.account-panel input:not([type=checkbox]) { width:100%; background:#0a202e; border:1px solid #466b7b; color:white; padding:.65rem; }
+.account-panel button { border:1px solid #3e778a; background:#173a4b; color:#dcf8ff; padding:.55rem; cursor:pointer; }
+.account-panel button:disabled { opacity:.5; cursor:default; }
+.account-panel nav { display:flex; flex-wrap:wrap; gap:.5rem; }
+.account-panel pre { user-select:all; overflow:auto; padding:1rem; background:#061923; }
+.account-avatars { display:grid; grid-template-columns:repeat(auto-fit,minmax(90px,1fr)); gap:.5rem; }
+.account-avatars button { display:grid; gap:.3rem; justify-items:center; }
+.account-avatars button[aria-pressed=true] { border-color:#64e3ff; background:#205669; }
+.account-avatars span { font-size:1.8rem; color:#80e6f6; }
+.avatar-crop { display:grid; gap:.7rem; border-top:1px solid #31576a; padding-top:1rem; }
+.avatar-crop canvas { width:160px; height:160px; max-width:100%; border:1px solid #64e3ff; background:#071b28; }
+.cloud-sync-status { position:fixed; bottom:.3rem; right:1rem; z-index:25; font-size:.7rem; padding:.2rem .5rem; color:#b7e5ed; background:#081d28; border-radius:4px; pointer-events:none; }
